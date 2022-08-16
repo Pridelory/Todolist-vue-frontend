@@ -1,5 +1,3 @@
-# vue-vuex-registration-login-example
+# Todolist-vue-frontend-demo
 
-Vue + Vuex - User Registration and Login Tutorial & Example
-
-To see a demo and further details go to http://jasonwatmore.com/post/2018/07/14/vue-vuex-user-registration-and-login-tutorial-example
+A demo built within 3 days

@@ -1,5 +1,5 @@
 import config from 'config';
-import { authHeader } from '../_helpers';
+import {authHeader} from '../_helpers';
 
 export const userService = {
     login,
@@ -8,26 +8,29 @@ export const userService = {
     getAll,
     getById,
     update,
-    delete: _delete
+    deleteTask: _delete,
+    getTodayTodolist,
+    addTask
 };
 
-function login(username, password) {
+function login(principal, credentials) {
     const requestOptions = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({principal, credentials})
     };
 
-    return fetch(`${config.apiUrl}/users/authenticate`, requestOptions)
+    return fetch(`${config.apiUrl}/api/user/login`, requestOptions)
         .then(handleResponse)
-        .then(user => {
+        .then(res => {
             // login successful if there's a jwt token in the response
-            if (user.token) {
-                // store user details and jwt token in local storage to keep user logged in between page refreshes
-                localStorage.setItem('user', JSON.stringify(user));
+            // if (user.token) {
+            // store user details and jwt token in local storage to keep user logged in between page refreshes
+            if (res.success) {
+                var token = res.data.accessToken.split("login:token:")[1]
+                localStorage.setItem('user', token);
             }
-
-            return user;
+            return res;
         });
 }
 
@@ -39,11 +42,38 @@ function logout() {
 function register(user) {
     const requestOptions = {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(user)
     };
 
-    return fetch(`${config.apiUrl}/users/register`, requestOptions).then(handleResponse);
+    return fetch(`${config.apiUrl}/api/user/register`, requestOptions)
+        .then(handleResponse)
+        .then(res => {
+            if (res.success) {
+                var token = res.data.accessToken.split("login:token:")[1]
+                localStorage.setItem('user', token);
+            }
+            return res;
+        });
+}
+
+function getTodayTodolist() {
+    const requestOptions = {
+        method: 'GET',
+        headers: authHeader()
+    };
+
+    return fetch(`/api/todolist/getTodayList`, requestOptions).then(handleResponse);
+}
+
+function addTask(task) {
+    const requestOptions = {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem('user')},
+        body: JSON.stringify(task)
+    };
+
+    return fetch(`api/todolist/addTask`, requestOptions).then(handleResponse);
 }
 
 function getAll() {
@@ -65,24 +95,24 @@ function getById(id) {
     return fetch(`${config.apiUrl}/users/${id}`, requestOptions).then(handleResponse);
 }
 
-function update(user) {
+function update(task) {
     const requestOptions = {
-        method: 'PUT',
-        headers: { ...authHeader(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(user)
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem('user')},
+        body: JSON.stringify(task)
     };
 
-    return fetch(`${config.apiUrl}/users/${user.id}`, requestOptions).then(handleResponse);
+    return fetch(`/api/todolist/updateTask`, requestOptions).then(handleResponse);
 }
 
 // prefixed function name with underscore because delete is a reserved word in javascript
-function _delete(id) {
+function _delete(task) {
     const requestOptions = {
         method: 'DELETE',
-        headers: authHeader()
+        headers: {'Content-Type': 'application/json', 'Authorization': localStorage.getItem('user')},
+        body: JSON.stringify(task)
     };
-
-    return fetch(`${config.apiUrl}/users/${id}`, requestOptions).then(handleResponse);
+    return fetch(`/api/todolist/deleteTask`, requestOptions).then(handleResponse);
 }
 
 function handleResponse(response) {

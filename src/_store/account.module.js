@@ -1,47 +1,58 @@
-import { userService } from '../_services';
-import { router } from '../_helpers';
+import {userService} from '../_services';
+import {router} from '../_helpers';
 
-const user = JSON.parse(localStorage.getItem('user'));
+// const user = JSON.parse(localStorage.getItem('user'));
+const user = localStorage.getItem('user')
 const state = user
-    ? { status: { loggedIn: true }, user }
-    : { status: {}, user: null };
+    ? {status: {loggedIn: true}, user}
+    : {status: {}, user: null};
 
 const actions = {
-    login({ dispatch, commit }, { username, password }) {
-        commit('loginRequest', { username });
-    
-        userService.login(username, password)
+    login({dispatch, commit}, {principal, credentials}) {
+        commit('loginRequest', {principal});
+        userService.login(principal, credentials)
             .then(
                 user => {
-                    commit('loginSuccess', user);
-                    router.push('/');
+                    if (user.success) {
+                        commit('loginSuccess', user);
+                        router.push('/');
+                        setTimeout(() => {
+                            // display success message after route change completes
+                            dispatch('alert/success', 'Login successful', {root: true});
+                        })
+                    } else {
+                        dispatch('alert/error', user.msg, {root: true});
+                    }
                 },
                 error => {
                     commit('loginFailure', error);
-                    dispatch('alert/error', error, { root: true });
+                    dispatch('alert/error', error, {root: true});
                 }
             );
     },
-    logout({ commit }) {
+    logout({commit}) {
         userService.logout();
         commit('logout');
     },
-    register({ dispatch, commit }, user) {
+    register({dispatch, commit}, user) {
         commit('registerRequest', user);
-    
         userService.register(user)
             .then(
                 user => {
-                    commit('registerSuccess', user);
-                    router.push('/login');
-                    setTimeout(() => {
-                        // display success message after route change completes
-                        dispatch('alert/success', 'Registration successful', { root: true });
-                    })
+                    if (user.success) {
+                        commit('registerSuccess', user);
+                        router.push('/');
+                        setTimeout(() => {
+                            // display success message after route change completes
+                            dispatch('alert/success', 'Registration successful', {root: true});
+                        })
+                    } else {
+                        dispatch('alert/error', user.msg, {root: true});
+                    }
                 },
                 error => {
                     commit('registerFailure', error);
-                    dispatch('alert/error', error, { root: true });
+                    dispatch('alert/error', error, {root: true});
                 }
             );
     }
@@ -49,11 +60,11 @@ const actions = {
 
 const mutations = {
     loginRequest(state, user) {
-        state.status = { loggingIn: true };
+        state.status = {loggingIn: false};
         state.user = user;
     },
     loginSuccess(state, user) {
-        state.status = { loggedIn: true };
+        state.status = {loggedIn: true};
         state.user = user;
     },
     loginFailure(state) {
@@ -65,7 +76,7 @@ const mutations = {
         state.user = null;
     },
     registerRequest(state, user) {
-        state.status = { registering: true };
+        state.status = {registering: false};
     },
     registerSuccess(state, user) {
         state.status = {};
